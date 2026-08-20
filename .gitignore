@@ -1,0 +1,15 @@
+# environments
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# raw & large data
+data/raw/
+data/luad_mafs/
+
+# generated outputs
+results/sigprofiler/
+
+.idea/
+
