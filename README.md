@@ -22,38 +22,42 @@ Which mutation processes have operated in LUAD, and do de novo signatures extrac
 
 
 ### Method
-**Step 1 - Building the SBS-96 Catalogue:** TCGA-LUAD somatic-mutation MAFs were retrieved from the GDC API and filtered to single-base substitutions on the standard chromosomes. Each substitution was classified by trinucleotide context (e.g. A[C>A]G) under the pyrimidine convention, producing a 96-channel profile per tumor. Contexts were read from the hg38 genome reference, with the middle base validated against the recorded reference allele. The aggregate profile showed a strong C>A component, the expected the tobacco-smoking signature.
+**Step 1 - Building the SBS-96 Catalogue:** TCGA-LUAD somatic-mutation MAFs were retrieved from the GDC API and filtered to single-base substitutions on the standard chromosomes. Each substitution was classified by trinucleotide context (e.g. A[C>A]G) under the pyrimidine convention, producing a 96-channel profile per tumor. Contexts were read from the hg38 genome reference, with the middle base validated against the recorded reference allele. The aggregate profile showed a strong C>A component, the expected tobacco-smoking signature.
 
 **Step 2 - NMF:** Non-negative matrix factorization from scikit-learn decomposes the 96 x tumor catalogue (V) into signatures (H) and per-tumor exposures (W), such that V ≈ W x H. Non-negativity is required because mutation counts cannot be negative. For each candidate rank k, we analyze reconstruction error, which measures fit, and stability, which measures reproducibility. The NMF function uses Kullback-Leibler divergence.
 
 **Step 3 - Rank Selection:** Across k = 2-20 (25 restarts each), reconstruction error and restart stability indicated the range of best k-values to be between 2 and 6. Error's steep decline flattened in that range and stability remained above 0.90. Upon plotting the extracted signatures per k, k = 2 and k = 3 show distinct, interpretable signatures; beyond k = 3 the additional signatures increasingly resemble split or noisy versions of the same processes rather than new biology. Thus, k = 3 is chosen as the appropriate rank.
 
-**Step 4 - COSMIC Matching:** Cosine similarity between the extracted signatures and COSMIC v3.4 associated Signature 3 with SBS4 (tobacco smoking), Signature 2 with SBS2/13 (APOBEC), and Signature 1 with SBS5 ('clock').
+**Step 4 - COSMIC Matching:** Cosine similarity between the extracted signatures and COSMIC v3.4 associated Signature 3 with SBS4 (tobacco smoking), Signature 2 with SBS2/13 (APOBEC), and Signature 1 with SBS5 ("clock-like").
 
 **Step 5 - Exposures:** Per-tumor signature fractions (W) showed smoking and SBS5/SBS6 broadly distributed, while APOBEC activity was concentrated in a subset of tumors.
 
 **Step 6 - Validation:** Signatures were cross-checked against SigProfilerExtractor, which independently recovered three signatures. Signature 1 matched to SBS5, Signature 2 matched to SBS2 followed by SBS13, and Signature 3 to SBS4. The fact that an established, more heavily optimized tool converges on the same three processes reinforces the validity of the NMF pipeline.  
 
 ### Findings
-The NMF model extracted three signatures. We selected the rank k=3 from two diagnostics, reconstruction error and stability, computed for k values from 2 to 20. Error declined sharply and slowed near k=3, while stability remained high (above 0.90) through this value. Inspecting the signature profile plots at nearby ranks, k=3 yielded distinct, interpretable singatures, while higher ranks began splitting single processes into near-duplicate signatures. Signature 1 most closely matched SBS5 (with a cosine similarity of 0.768), followed by SBS6 (0.763). SBS5 is a clock-like mutational signature whose accumulation correlates with age; SBS6 is linked to defective DNA mismatch repair. Signature 2 mapped to SBS2 (with a cosine similarity of 0.762), with SBS13 the next-beset match (0.635); both are linked to APOBEC, a family of proteins known to cause hypermutations in DNA. Finally, Signature 3 matched SBS4 (with a cosine similarity of 0.979), which is strongly associated with tobacco smoking. This is a confident assignment, considering both the cosine value and the characteristic C>A profile. Per-tumor exposures showed smoking and background signatures broadly distributed, while APOBEC activity was concentrated in a subset of tumors. To validate these signatures, we ran SigProfilerExtractor — an established, heavily-optimized tool for de novo signature extraction — on the same catalogue. It retrieved three signatures, matching our rank, whose COSMIC identities agreed with ours: SBS5 (0.767, with SBS6 next at 0.618) for Signature 1, SBS2 (0.762) then SBS13 (0.635) for Signature 2, and SBS4 (0.979) for Signature 3. The cross-tool agreement supports the validity of our pipeline. We conclude that three processes underlie the TCGA-LUAD mutational landscape: tobacco smoking (SBS4), APOBEC activity (SBS2/13), and an SBS5/6-like background. 
+The NMF model extracted three signatures. We selected the rank k = 3 from two diagnostics, reconstruction error and stability, and computed for k values from 2 to 20. Error declined sharply and slowed near k = 3, while stability remained high (above 0.90) at this value. Inspecting the signature profile plots at nearby ranks, k = 3 yielded distinct, interpretable singatures, while higher ranks began splitting single processes into near-duplicate signatures. Signature 1 most closely matched SBS5 (with a cosine similarity of 0.768), followed by SBS6 (0.763). SBS5 is a clock-like mutational signature whose accumulation correlates with age; SBS6 is linked to defective DNA mismatch repair. Signature 2 mapped to SBS2 (with a cosine similarity of 0.762), with SBS13 the next-best match (0.635); both are linked to APOBEC, a family of proteins known to cause hypermutations in DNA. Finally, Signature 3 matched SBS4 (with a cosine similarity of 0.979), which is strongly associated with tobacco smoking. This is a confident assignment, considering both the cosine similarity value and the characteristic C>A profile plot. Per-tumor exposures showed smoking and background signatures broadly distributed, while APOBEC activity was concentrated in a subset of tumors. To validate these signatures, we ran SigProfilerExtractor — an established, heavily-optimized tool for de novo signature extraction — on the same catalogue. It retrieved three signatures, matching our rank, whose COSMIC identities agreed with ours: SBS5 (0.767, with SBS6 next at 0.618) for Signature 1, SBS2 (0.762) then SBS13 (0.635) for Signature 2, and SBS4 (0.979) for Signature 3. The cross-tool agreement supports the validity of our pipeline. We conclude that three processes underlie the TCGA-LUAD mutational landscape: tobacco smoking (SBS4), APOBEC activity (SBS2/13), and an SBS5/6-like background. 
+
+### Graphs
+**Signature Profiles for k = 3**
+![Signature Profiles](results/figures/signatures_rank3.png)
 
 ### Limitations
 - Signatures were derived from one cancer cohort (TCGA-LUAD) of bulk tumor samples, so they may not generalize to other cohorts, and rare processes might be missed.
-- scikit-learn's general-purpose NMF was used rather than a tool built specifically for signature extraction. However, results were cross-validated against SigProfilerExtractor; bootstrap resampling would provide further validation. 
+- scikit-learn's general-purpose NMF was used rather than a tool built specifically for signature extraction. However, results were cross-validated against the SigProfilerExtractor; for further validation, bootstrap resampling is recommended. 
 - Only dominant processes were recovered; finer sub-signatures were not differentiated.
-- The rank of k=3 was chosen from reconstruction error, stability, and analysis of signature profile graphs. It remains a bit of a subjective choice; a different criterion could support another k value. 
+- The rank of k = 3 was chosen from reconstruction error, stability, and analysis of signature profile graphs. It remains a bit of a subjective choice; a different criterion could support another k value. 
 
 ### Repository Structure
     .
     ├── README.md
     ├── requirements.txt
-    ├── luad_signatures.ipynb  # the full analysis, narrated
+    ├── luad_signatures.ipynb
     ├── results/
     │   ├── figures/                    # profiles, rank selection, exposures
-    │   └── sigprofiler/                # SigProfiler output
+    │   └── sigprofiler/                # SigProfiler output, gitignored
     └── data/
-        ├── luad_mafs/                  
-        ├── raw/                        
+        ├── luad_mafs/                  # individual MAF files, gitignored              
+        ├── raw/                        # gitignored
         └── processed/
             ├── sbs96_matrix.csv
             └── sbs96_matrix.txt        
@@ -63,7 +67,7 @@ The NMF model extracted three signatures. We selected the rank k=3 from two diag
     python -m venv .venv && source .venv/bin/activate
     pip install -r requirements.txt
 
-    # 2. Obtain data (see Data section) into data/raw/:
+    # 2. Obtain data (see Data section):
     #    - TCGA-LUAD MAF from the GDC portal
     #    - hg38.fa from UCSC
     #    - COSMIC v3.4 SBS reference
